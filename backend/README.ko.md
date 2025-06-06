@@ -1,7 +1,3 @@
-# Typing Codex 백엔드
-
-Typing Codex 웹 기반 타이핑 게임의 백엔드 서버입니다.
-
 ## 프로젝트 구조
 
 ```
