@@ -50,4 +50,12 @@ export class GameGateway
   ): void {
     this.gameService.movePlayer(client.id, newPosition)
   }
+
+  @SubscribeMessage('submitWord')
+  handleWordSubmit(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() word: string,
+  ): void {
+    this.gameService.submitWord(client.id, word)
+  }
 }
