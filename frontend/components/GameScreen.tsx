@@ -55,17 +55,8 @@ const GameScreen = () => {
     ctx.font = '20px Arial'
     ctx.textAlign = 'center'
     gameState.words.forEach((word) => {
-      const healingWords = ['보호', '생명', '보상', '방어', '힐링']
-      const attackWords = ['공격', '화염', '질주', '번개', '속도', '실골격', '타격']
-
-      if (healingWords.includes(word.text)) {
-        ctx.fillStyle = 'limegreen'
-      } else if (attackWords.includes(word.text)) {
-        ctx.fillStyle = 'red'
-      } else {
-        ctx.fillStyle = 'white'
-      }
-
+      const type = word.type as 'attack' | 'heal'
+      ctx.fillStyle = type === 'heal' ? 'limegreen' : type === 'attack' ? 'red' : 'white'
       ctx.fillText(word.text, word.position.x, word.position.y)
     })
 
@@ -116,14 +107,9 @@ const GameScreen = () => {
           y: currentPlayer.position.y + e.clientY - lastMousePos.current.y,
         }
 
-        newPosition.x = Math.max(
-          0,
-          Math.min(gameState?.mapSize.width || 0, newPosition.x),
-        )
-        newPosition.y = Math.max(
-          0,
-          Math.min(gameState?.mapSize.height || 0, newPosition.y),
-        )
+        newPosition.x = Math.max(0, Math.min(gameState?.mapSize.width || 0, newPosition.x))
+        newPosition.y = Math.max(0, Math.min(gameState?.mapSize.height || 0, newPosition.y))
+
         movePlayer(newPosition)
         lastMousePos.current = { x: e.clientX, y: e.clientY }
       }
@@ -147,24 +133,15 @@ const GameScreen = () => {
   }
 
   return (
-    <div
-      style={{
-        position: 'relative',
-        width: '100vw',
-        height: '100vh',
-        background: '#111',
-      }}
-    >
+    <div style={{ position: 'relative', width: '100vw', height: '100vh', background: '#111' }}>
       <canvas ref={canvasRef} style={{ display: 'block' }} />
-      <div
-        style={{
-          position: 'absolute',
-          bottom: '20px',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          zIndex: 10,
-        }}
-      >
+      <div style={{
+        position: 'absolute',
+        bottom: '20px',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        zIndex: 10,
+      }}>
         <form onSubmit={handleWordSubmit}>
           <input
             type="text"
@@ -185,53 +162,48 @@ const GameScreen = () => {
       </div>
 
       {currentPlayer && (
-        <div
-          style={{
-            position: 'absolute',
-            top: 10,
-            left: 10,
-            color: 'white',
-            backgroundColor: 'rgba(0,0,0,0.5)',
-            padding: '10px',
-            borderRadius: '5px',
-          }}
-        >
+        <div style={{
+          position: 'absolute',
+          top: 10,
+          left: 10,
+          color: 'white',
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          padding: '10px',
+          borderRadius: '5px',
+        }}>
           <h3>{currentPlayer.name}</h3>
           <p>Health: {currentPlayer.health}</p>
         </div>
       )}
 
-{gameState && (
-  <div
-    style={{
-      position: 'absolute',
-      top: 10,
-      right: 10,
-      color: 'white',
-      backgroundColor: 'rgba(0,0,0,0.5)',
-      padding: '10px',
-      borderRadius: '5px',
-      minWidth: '140px',
-    }}
-  >
-    <h4 style={{ margin: '0 0 5px 0' }}>플레이어 랭킹</h4>
-    {[...gameState.players]
-      .sort((a, b) => b.health - a.health)
-      .map((player, index) => (
-        <div
-          key={player.id}
-          style={{
-            fontSize: '14px',
-            fontWeight: player.id === socket?.id ? 'bold' : 'normal',
-            color: player.id === socket?.id ? '#4ade80' : 'white',
-          }}
-        >
-          {index + 1}위 - {player.skin} {player.name} ({player.health})
+      {gameState && (
+        <div style={{
+          position: 'absolute',
+          top: 10,
+          right: 10,
+          color: 'white',
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          padding: '10px',
+          borderRadius: '5px',
+          minWidth: '140px',
+        }}>
+          <h4 style={{ margin: '0 0 5px 0' }}>플레이어 랭킹</h4>
+          {[...gameState.players]
+            .sort((a, b) => b.health - a.health)
+            .map((player, index) => (
+              <div
+                key={player.id}
+                style={{
+                  fontSize: '14px',
+                  fontWeight: player.id === socket?.id ? 'bold' : 'normal',
+                  color: player.id === socket?.id ? '#4ade80' : 'white',
+                }}
+              >
+                {index + 1}위 - {player.skin} {player.name} ({player.health})
+              </div>
+            ))}
         </div>
-      ))}
-  </div>
-)}
-
+      )}
     </div>
   )
 }
