@@ -1,4 +1,4 @@
-// File: C:\Users\이승우\Desktop\프로젝트모음\새 폴더 (2)\typing-fullstack-main\frontend\app\page.tsx
+// File: /home/orca/devs/study/programmers_team/team_project/webgame-demo/typing-fullstack/frontend/app/page.tsx
 import * as entry from '../../../app/page.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 
