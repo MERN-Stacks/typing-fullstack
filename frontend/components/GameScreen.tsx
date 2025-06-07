@@ -13,7 +13,6 @@ const GameScreen = () => {
 
   const currentPlayer = gameState?.players.find((p) => p.id === socket?.id)
 
-  // Update camera to follow the player
   useEffect(() => {
     if (currentPlayer) {
       setCamera({
@@ -23,7 +22,6 @@ const GameScreen = () => {
     }
   }, [currentPlayer?.position.x, currentPlayer?.position.y])
 
-  // Canvas drawing logic
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas || !gameState) return
@@ -34,15 +32,11 @@ const GameScreen = () => {
     canvas.width = window.innerWidth
     canvas.height = window.innerHeight
 
-    // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height)
 
-    // Save context
     ctx.save()
-    // Translate to camera position
     ctx.translate(-camera.x, -camera.y)
 
-    // Draw grid
     const gridSize = 50
     ctx.strokeStyle = '#333'
     for (let x = 0; x <= gameState.mapSize.width; x += gridSize) {
@@ -58,17 +52,24 @@ const GameScreen = () => {
       ctx.stroke()
     }
 
-    // Draw words
     ctx.font = '20px Arial'
-    ctx.fillStyle = 'white'
     ctx.textAlign = 'center'
     gameState.words.forEach((word) => {
+      const healingWords = ['보호', '생명', '보상', '방어', '힐링']
+      const attackWords = ['공격', '화염', '질주', '번개', '속도', '실골격', '타격']
+
+      if (healingWords.includes(word.text)) {
+        ctx.fillStyle = 'limegreen'
+      } else if (attackWords.includes(word.text)) {
+        ctx.fillStyle = 'red'
+      } else {
+        ctx.fillStyle = 'white'
+      }
+
       ctx.fillText(word.text, word.position.x, word.position.y)
     })
 
-    // Draw players
     gameState.players.forEach((player) => {
-      // Health bar
       ctx.fillStyle = 'red'
       ctx.fillRect(player.position.x - 25, player.position.y - 40, 50, 5)
       ctx.fillStyle = 'green'
@@ -79,7 +80,6 @@ const GameScreen = () => {
         5,
       )
 
-      // Player skin and name
       ctx.font = '30px Arial'
       ctx.fillText(player.skin, player.position.x, player.position.y)
       ctx.font = '14px Arial'
@@ -87,18 +87,15 @@ const GameScreen = () => {
       ctx.fillText(player.name, player.position.x, player.position.y + 20)
     })
 
-    // Draw effects
     effects.forEach((effect) => {
       ctx.font = '30px Arial'
       ctx.fillStyle = effect.color
       ctx.fillText(effect.emoji, effect.position.x, effect.position.y)
     })
 
-    // Restore context
     ctx.restore()
   }, [gameState, camera, effects])
 
-  // Mouse drag to move player
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
@@ -119,7 +116,6 @@ const GameScreen = () => {
           y: currentPlayer.position.y + e.clientY - lastMousePos.current.y,
         }
 
-        // Clamp to map bounds
         newPosition.x = Math.max(
           0,
           Math.min(gameState?.mapSize.width || 0, newPosition.x),
@@ -204,6 +200,38 @@ const GameScreen = () => {
           <p>Health: {currentPlayer.health}</p>
         </div>
       )}
+
+      {gameState && (
+  <div
+    style={{
+      position: 'absolute',
+      top: 10,
+      right: 10,
+      color: 'white',
+      backgroundColor: 'rgba(0,0,0,0.5)',
+      padding: '10px',
+      borderRadius: '5px',
+      minWidth: '140px',
+    }}
+  >
+    <h4 style={{ margin: '0 0 5px 0' }}>플레이어 랭킹</h4>
+    {[...gameState.players]
+      .sort((a, b) => b.health - a.health)
+      .map((player, index) => (
+        <div
+          key={player.id}
+          style={{
+            fontSize: '14px',
+            fontWeight: player.id === socket?.id ? 'bold' : 'normal',
+            color: player.id === socket?.id ? '#4ade80' : 'white',
+          }}
+        >
+          {index + 1}위 - {player.skin} {player.name} ({player.health})
+        </div>
+      ))}
+  </div>
+)}
+
     </div>
   )
 }
