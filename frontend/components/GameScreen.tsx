@@ -55,12 +55,9 @@ const GameScreen = () => {
     ctx.font = '20px Arial'
     ctx.textAlign = 'center'
     gameState.words.forEach((word) => {
-      const healingWords = ['보호', '생명', '보상', '방어', '힐링']
-      const attackWords = ['공격', '화염', '질주', '번개', '속도', '실골격', '타격']
-
-      if (healingWords.includes(word.text)) {
+      if (word.type === 'heal') {
         ctx.fillStyle = 'limegreen'
-      } else if (attackWords.includes(word.text)) {
+      } else if (word.type === 'attack') {
         ctx.fillStyle = 'red'
       } else {
         ctx.fillStyle = 'white'
@@ -202,36 +199,35 @@ const GameScreen = () => {
       )}
 
       {gameState && (
-  <div
-    style={{
-      position: 'absolute',
-      top: 10,
-      right: 10,
-      color: 'white',
-      backgroundColor: 'rgba(0,0,0,0.5)',
-      padding: '10px',
-      borderRadius: '5px',
-      minWidth: '140px',
-    }}
-  >
-    <h4 style={{ margin: '0 0 5px 0' }}>플레이어 랭킹</h4>
-    {[...gameState.players]
-      .sort((a, b) => b.health - a.health)
-      .map((player, index) => (
         <div
-          key={player.id}
           style={{
-            fontSize: '14px',
-            fontWeight: player.id === socket?.id ? 'bold' : 'normal',
-            color: player.id === socket?.id ? '#4ade80' : 'white',
+            position: 'absolute',
+            top: 10,
+            right: 10,
+            color: 'white',
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            padding: '10px',
+            borderRadius: '5px',
+            minWidth: '140px',
           }}
         >
-          {index + 1}위 - {player.skin} {player.name} ({player.health})
+          <h4 style={{ margin: '0 0 5px 0' }}>플레이어 랭킹</h4>
+          {[...gameState.players]
+            .sort((a, b) => b.health - a.health)
+            .map((player, index) => (
+              <div
+                key={player.id}
+                style={{
+                  fontSize: '14px',
+                  fontWeight: player.id === socket?.id ? 'bold' : 'normal',
+                  color: player.id === socket?.id ? '#4ade80' : 'white',
+                }}
+              >
+                {index + 1}위 - {player.skin} {player.name} ({player.health})
+              </div>
+            ))}
         </div>
-      ))}
-  </div>
-)}
-
+      )}
     </div>
   )
 }
