@@ -8,14 +8,10 @@ import React, {
   useCallback,
 } from 'react'
 import { io, Socket } from 'socket.io-client'
+import type { GameState as ServerGameState, Player } from '@/types/game'
 
-interface Player {
-  id: string
-  name: string
-  skin: string
-  health: number
-  position: { x: number; y: number }
-  inventory: any[]
+interface GameState extends Omit<ServerGameState, 'players'> {
+  players: Player[]
 }
 
 interface Word {
@@ -23,12 +19,6 @@ interface Word {
   text: string
   type: string
   position: { x: number; y: number }
-}
-
-interface GameState {
-  players: Player[]
-  words: Word[]
-  mapSize: { width: number; height: number }
 }
 
 interface Effect {

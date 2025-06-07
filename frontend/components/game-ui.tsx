@@ -10,8 +10,7 @@ interface GameUIProps {
   currentUser: Player | null
   isSpectator: boolean
   onExitGame: () => void
-  onUpdatePlayer: (playerId: string, updates: Partial<Player>) => void
-  onUpdateGameState: (updates: Partial<GameState>) => void
+  onSubmitWord: (word: string) => void
 }
 
 export default function GameUI({
@@ -19,196 +18,20 @@ export default function GameUI({
   currentUser,
   isSpectator,
   onExitGame,
-  onUpdatePlayer,
-  onUpdateGameState,
+  onSubmitWord,
 }: GameUIProps) {
   const [typingInput, setTypingInput] = useState('')
 
-  const handleSubmitWord = () => {
+  const handleSubmit = () => {
     if (!typingInput.trim() || !currentUser) return
-
-    // Find matching word in view
-    const matchedWord = findWordInView(typingInput.trim())
-    if (matchedWord) {
-      processWordEffect(matchedWord)
-      removeWord(matchedWord.id)
-      generateNewWord()
-    }
-
+    onSubmitWord(typingInput.trim())
     setTypingInput('')
   }
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
-      handleSubmitWord()
+      handleSubmit()
     }
-  }
-
-  const findWordInView = (inputWord: string) => {
-    if (!currentUser) return null
-
-    const viewDistance = 300
-    return gameState.words.find((word) => {
-      const distance = Math.sqrt(
-        Math.pow(word.position.x - currentUser.position.x, 2) +
-          Math.pow(word.position.y - currentUser.position.y, 2),
-      )
-      return distance <= viewDistance && word.text === inputWord
-    })
-  }
-
-  const processWordEffect = (word: any) => {
-    if (!currentUser) return
-
-    switch (word.type) {
-      case 'attack':
-        attackNearestPlayer()
-        break
-      case 'heal':
-        healPlayer(currentUser)
-        break
-      case 'speed':
-        applySpeedBoost(currentUser)
-        break
-      case 'shield':
-        applyShield(currentUser)
-        break
-      case 'item':
-        giveRandomItem(currentUser)
-        break
-    }
-  }
-
-  const attackNearestPlayer = () => {
-    if (!currentUser) return
-
-    let nearestPlayer: NearestPlayer = {
-      id: '',
-      health: 0,
-      position: {
-        x: 0,
-        y: 0,
-      },
-    }
-
-    let nearestDistance = Number.POSITIVE_INFINITY
-
-    gameState.players.forEach((player) => {
-      if (player.id !== currentUser.id) {
-        const distance = Math.sqrt(
-          Math.pow(player.position.x - currentUser.position.x, 2) +
-            Math.pow(player.position.y - currentUser.position.y, 2),
-        )
-        if (distance < nearestDistance) {
-          nearestDistance = distance
-          nearestPlayer = player
-        }
-      }
-    })
-
-    if (nearestPlayer && nearestDistance <= 400) {
-      onUpdatePlayer(nearestPlayer.id, {
-        health: Math.max(0, nearestPlayer.health - 20),
-      })
-    }
-  }
-
-  const healPlayer = (player: Player) => {
-    onUpdatePlayer(player.id, {
-      health: Math.min(100, player.health + 25),
-    })
-  }
-
-  const applySpeedBoost = (player: Player) => {
-    onUpdatePlayer(player.id, {
-      speed: player.speed + 10,
-    })
-  }
-
-  const applyShield = (player: Player) => {
-    onUpdatePlayer(player.id, {
-      shield: 100,
-    })
-  }
-
-  const giveRandomItem = (player: Player) => {
-    const itemTypes = ['heal', 'attack', 'speed', 'shield']
-    const randomType = itemTypes[Math.floor(Math.random() * itemTypes.length)]
-
-    if (player.inventory.length < 9) {
-      const newInventory = [
-        ...player.inventory,
-        {
-          type: randomType,
-          emoji: getItemEmoji(randomType),
-          name: getItemName(randomType),
-        },
-      ]
-
-      onUpdatePlayer(player.id, { inventory: newInventory })
-    }
-  }
-
-  const getItemEmoji = (type: string) => {
-    const emojis = { heal: '❤️', attack: '⚔️', speed: '⚡', shield: '🛡️' }
-    return emojis[type as keyof typeof emojis] || '❓'
-  }
-
-  const getItemName = (type: string) => {
-    const names = {
-      heal: '회복 포션',
-      attack: '공격 아이템',
-      speed: '속도 부스터',
-      shield: '방어막',
-    }
-    return names[type as keyof typeof names] || '알 수 없는 아이템'
-  }
-
-  const removeWord = (wordId: number) => {
-    onUpdateGameState({
-      words: gameState.words.filter((word) => word.id !== wordId),
-    })
-  }
-
-  const generateNewWord = () => {
-    const wordLists = {
-      attack: ['공격', '타격', '폭발', '번개', '화염'],
-      heal: ['회복', '치료', '힐링', '재생', '생명'],
-      speed: ['속도', '빠름', '질주', '가속', '순간'],
-      shield: ['방어', '보호', '실드', '가드', '차단'],
-      item: ['아이템', '보물', '선물', '상자', '보상'],
-    }
-
-    const getWordColor = (type: string) => {
-      const colors = {
-        attack: '#e74c3c',
-        heal: '#2ecc71',
-        speed: '#3498db',
-        shield: '#f39c12',
-        item: '#9b59b6',
-      }
-      return colors[type as keyof typeof colors] || '#2c3e50'
-    }
-
-    const wordTypes = Object.keys(wordLists)
-    const wordType = wordTypes[Math.floor(Math.random() * wordTypes.length)]
-    const wordList = wordLists[wordType as keyof typeof wordLists]
-    const word = wordList[Math.floor(Math.random() * wordList.length)]
-
-    const newWord = {
-      id: Date.now(),
-      text: word,
-      type: wordType,
-      position: {
-        x: Math.random() * gameState.mapSize.width,
-        y: Math.random() * gameState.mapSize.height,
-      },
-      color: getWordColor(wordType),
-    }
-
-    onUpdateGameState({
-      words: [...gameState.words, newWord],
-    })
   }
 
   if (isSpectator) {
@@ -305,21 +128,21 @@ export default function GameUI({
       )}
 
       {/* Typing Input (Bottom) */}
-      <div className="absolute bottom-5 left-1/2 transform -translate-x-1/2 flex gap-3 bg-white/90 p-4 rounded-full shadow-lg pointer-events-auto">
+      <div className="absolute bottom-5 left-1/2 -translate-x-1/2 z-10 w-[300px] pointer-events-auto">
         <input
           type="text"
-          placeholder="입력"
           value={typingInput}
           onChange={(e) => setTypingInput(e.target.value)}
           onKeyPress={handleKeyPress}
-          className="w-75 px-5 py-3 rounded-full bg-gray-100 text-lg outline-none focus:ring-2 focus:ring-purple-400"
-          autoComplete="off"
+          placeholder="단어를 입력하세요..."
+          className="w-full px-4 py-3 bg-white/90 text-gray-800 rounded-lg shadow-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+          autoFocus
         />
         <button
-          onClick={handleSubmitWord}
-          className="px-5 py-3 bg-purple-600 text-white rounded-full hover:bg-purple-700 transition-colors text-lg"
+          onClick={handleSubmit}
+          className="absolute right-2 top-1/2 -translate-y-1/2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
         >
-          ▶
+          입력
         </button>
       </div>
 
