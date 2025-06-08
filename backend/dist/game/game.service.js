@@ -23,7 +23,6 @@ let GameService = GameService_1 = class GameService {
             mapSize: { width: 2000, height: 2000 },
         };
         this.gameLoopInterval = null;
-        // Word lists for different effects
         this.wordLists = {
             attack: [
                 '공격',
@@ -63,7 +62,6 @@ let GameService = GameService_1 = class GameService {
             shield: ['방어', '보호', '실드', '가드', '차단'],
             item: ['아이템', '보물', '선물', '상자', '보상'],
         };
-        // Item types
         this.itemTypes = {
             heal: { emoji: '❤️', name: '회복 포션' },
             attack: { emoji: '⚔️', name: '공격 아이템' },
@@ -71,18 +69,16 @@ let GameService = GameService_1 = class GameService {
             shield: { emoji: '🛡️', name: '방어막' },
         };
         this.wordCounter = 0;
-        this.addDemoPlayers(); // For testing
+        this.addDemoPlayers();
     }
     setServer(server) {
         this.server = server;
     }
-    // Called when the service is initialized
     onModuleInit() {
         this.startGameLoop();
         this.generateInitialWords();
         this.logger.log('Game Service Initialized and Game Loop Started.');
     }
-    // Called when the application is shutting down
     onModuleDestroy() {
         this.stopGameLoop();
         this.logger.log('Game Loop Stopped.');
@@ -131,6 +127,7 @@ let GameService = GameService_1 = class GameService {
             name: name || id,
             skin: skin || '😊',
             health: 100,
+            speed: 0.5,
             position: {
                 x: Math.floor(Math.random() * this.gameState.mapSize.width),
                 y: Math.floor(Math.random() * this.gameState.mapSize.height),
@@ -149,15 +146,18 @@ let GameService = GameService_1 = class GameService {
             this.broadcastMessage('playerLeft', { id });
         }
     }
-    movePlayer(id, newPosition) {
+    movePlayer(id, angle) {
         const player = this.gameState.players.get(id);
         if (player) {
-            // Add validation logic here (e.g., check distance)
-            const dist = Math.hypot(newPosition.x - player.position.x, newPosition.y - player.position.y);
-            // Allow move only if it's a reasonable distance for one update frame
-            if (dist < 50) {
-                player.position = newPosition;
-            }
+            // Calculate new position based on angle and player's speed
+            const newPosition = {
+                x: player.position.x + Math.cos(angle) * player.speed,
+                y: player.position.y + Math.sin(angle) * player.speed,
+            };
+            // World boundary check
+            newPosition.x = Math.max(0, Math.min(this.gameState.mapSize.width, newPosition.x));
+            newPosition.y = Math.max(0, Math.min(this.gameState.mapSize.height, newPosition.y));
+            player.position = newPosition;
         }
     }
     // =================================================================
@@ -196,7 +196,7 @@ let GameService = GameService_1 = class GameService {
             this.generateNewWord(); // Generate a new word to replace it
             this.broadcastMessage('wordCompleted', {
                 wordId: word.id,
-                aplayerId: player.id,
+                playerId: player.id,
             });
         }
     }

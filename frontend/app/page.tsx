@@ -1,6 +1,6 @@
 'use client'
 
-import { useGame } from '@/lib/GameProvider'
+import { useGame } from '@/components/GameStateManager'
 import LoginScreen from '@/components/LoginScreen'
 import GameScreen from '@/components/GameScreen'
 

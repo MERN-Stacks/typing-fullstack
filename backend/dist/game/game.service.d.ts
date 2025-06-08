@@ -5,6 +5,7 @@ interface Player {
     name: string;
     skin: string;
     health: number;
+    speed: number;
     position: {
         x: number;
         y: number;
@@ -44,10 +45,7 @@ export declare class GameService implements OnModuleInit, OnModuleDestroy {
     private broadcastGameState;
     addPlayer(id: string, name: string, skin: string): Player;
     removePlayer(id: string): void;
-    movePlayer(id: string, newPosition: {
-        x: number;
-        y: number;
-    }): void;
+    movePlayer(id: string, angle: number): void;
     private generateInitialWords;
     private generateNewWord;
     submitWord(playerId: string, submittedWord: string): void;

@@ -6,12 +6,12 @@ import {
 } from '@nestjs/common'
 import { Server } from 'socket.io'
 
-// Define types for better structure
 interface Player {
   id: string
   name: string
   skin: string
   health: number
+  speed: number
   position: { x: number; y: number }
   inventory: Item[]
   effects: {
@@ -53,7 +53,6 @@ export class GameService implements OnModuleInit, OnModuleDestroy {
 
   private gameLoopInterval: NodeJS.Timeout | null = null
 
-  // Word lists for different effects
   private readonly wordLists = {
     attack: [
       '공격',
@@ -94,7 +93,6 @@ export class GameService implements OnModuleInit, OnModuleDestroy {
     item: ['아이템', '보물', '선물', '상자', '보상'],
   }
 
-  // Item types
   private readonly itemTypes = {
     heal: { emoji: '❤️', name: '회복 포션' },
     attack: { emoji: '⚔️', name: '공격 아이템' },
@@ -105,21 +103,19 @@ export class GameService implements OnModuleInit, OnModuleDestroy {
   private wordCounter = 0
 
   constructor() {
-    this.addDemoPlayers() // For testing
+    this.addDemoPlayers()
   }
 
   setServer(server: Server) {
     this.server = server
   }
 
-  // Called when the service is initialized
   onModuleInit() {
     this.startGameLoop()
     this.generateInitialWords()
     this.logger.log('Game Service Initialized and Game Loop Started.')
   }
 
-  // Called when the application is shutting down
   onModuleDestroy() {
     this.stopGameLoop()
     this.logger.log('Game Loop Stopped.')
@@ -172,6 +168,7 @@ export class GameService implements OnModuleInit, OnModuleDestroy {
       name: name || id,
       skin: skin || '😊',
       health: 100,
+      speed: 0.5,
       position: {
         x: Math.floor(Math.random() * this.gameState.mapSize.width),
         y: Math.floor(Math.random() * this.gameState.mapSize.height),
@@ -192,18 +189,26 @@ export class GameService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  movePlayer(id: string, newPosition: { x: number; y: number }) {
+  movePlayer(id: string, angle: number) {
     const player = this.gameState.players.get(id)
     if (player) {
-      // Add validation logic here (e.g., check distance)
-      const dist = Math.hypot(
-        newPosition.x - player.position.x,
-        newPosition.y - player.position.y,
-      )
-      // Allow move only if it's a reasonable distance for one update frame
-      if (dist < 50) {
-        player.position = newPosition
+      // Calculate new position based on angle and player's speed
+      const newPosition = {
+        x: player.position.x + Math.cos(angle) * player.speed,
+        y: player.position.y + Math.sin(angle) * player.speed,
       }
+
+      // World boundary check
+      newPosition.x = Math.max(
+        0,
+        Math.min(this.gameState.mapSize.width, newPosition.x),
+      )
+      newPosition.y = Math.max(
+        0,
+        Math.min(this.gameState.mapSize.height, newPosition.y),
+      )
+
+      player.position = newPosition
     }
   }
 
@@ -248,7 +253,7 @@ export class GameService implements OnModuleInit, OnModuleDestroy {
       this.generateNewWord() // Generate a new word to replace it
       this.broadcastMessage('wordCompleted', {
         wordId: word.id,
-        aplayerId: player.id,
+        playerId: player.id,
       })
     }
   }

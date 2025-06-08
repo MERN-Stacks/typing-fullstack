@@ -37,8 +37,8 @@ let GameGateway = class GameGateway {
         this.logger.log(`Client disconnected: ${client.id}`);
         this.gameService.removePlayer(client.id);
     }
-    handlePlayerMove(client, newPosition) {
-        this.gameService.movePlayer(client.id, newPosition);
+    handlePlayerMove(client, angle) {
+        this.gameService.movePlayer(client.id, angle);
     }
     handleWordSubmit(client, word) {
         this.gameService.submitWord(client.id, word);
@@ -54,7 +54,7 @@ __decorate([
     __param(0, (0, websockets_1.ConnectedSocket)()),
     __param(1, (0, websockets_1.MessageBody)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [socket_io_1.Socket, Object]),
+    __metadata("design:paramtypes", [socket_io_1.Socket, Number]),
     __metadata("design:returntype", void 0)
 ], GameGateway.prototype, "handlePlayerMove", null);
 __decorate([

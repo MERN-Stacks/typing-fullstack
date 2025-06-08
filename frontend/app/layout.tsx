@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css' // Assuming this is the main stylesheet
-import { GameProvider } from '@/lib/GameProvider'
+import { GameProvider } from '@/components/GameStateManager'
 
 const inter = Inter({ subsets: ['latin'] })
 

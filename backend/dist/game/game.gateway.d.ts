@@ -9,9 +9,6 @@ export declare class GameGateway implements OnGatewayInit, OnGatewayConnection, 
     afterInit(server: Server): void;
     handleConnection(client: Socket, ...args: any[]): void;
     handleDisconnect(client: Socket): void;
-    handlePlayerMove(client: Socket, newPosition: {
-        x: number;
-        y: number;
-    }): void;
+    handlePlayerMove(client: Socket, angle: number): void;
     handleWordSubmit(client: Socket, word: string): void;
 }

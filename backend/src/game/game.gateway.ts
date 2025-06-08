@@ -46,9 +46,9 @@ export class GameGateway
   @SubscribeMessage('playerMove')
   handlePlayerMove(
     @ConnectedSocket() client: Socket,
-    @MessageBody() newPosition: { x: number; y: number },
+    @MessageBody() angle: number,
   ): void {
-    this.gameService.movePlayer(client.id, newPosition)
+    this.gameService.movePlayer(client.id, angle)
   }
 
   @SubscribeMessage('submitWord')

@@ -1,26 +1,28 @@
 'use client'
 
 import React, { useRef, useEffect, useState } from 'react'
-import { useGame } from '@/lib/GameProvider'
+import { useGame } from '@/components/GameStateManager'
+import { useRouter } from 'next/navigation'
 
-const GameScreen = () => {
-  const { gameState, socket, submitWord, movePlayer, effects } = useGame()
+export default function GameScreen() {
+  const {
+    gameState,
+    socket,
+    submitWord,
+    movePlayer,
+    effects,
+    disconnect,
+    currentPlayer,
+    camera,
+    updatePlayerPosition,
+  } = useGame()
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
   const [word, setWord] = useState('')
-  const [camera, setCamera] = useState({ x: 0, y: 0 })
-  const lastMousePos = useRef({ x: 0, y: 0 })
-  const isDragging = useRef(false)
+  const router = useRouter()
 
-  const currentPlayer = gameState?.players.find((p) => p.id === socket?.id)
-
-  useEffect(() => {
-    if (currentPlayer) {
-      setCamera({
-        x: currentPlayer.position.x - window.innerWidth / 2,
-        y: currentPlayer.position.y - window.innerHeight / 2,
-      })
-    }
-  }, [currentPlayer?.position.x, currentPlayer?.position.y])
+  const mousePosition = useRef({ x: 0, y: 0 })
+  const isMouseDown = useRef(false)
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -55,15 +57,25 @@ const GameScreen = () => {
     ctx.font = '20px Arial'
     ctx.textAlign = 'center'
     gameState.words.forEach((word) => {
-      const healingWords = ['보호', '생명', '보상', '방어', '힐링']
-      const attackWords = ['공격', '화염', '질주', '번개', '속도', '실골격', '타격']
-
-      if (healingWords.includes(word.text)) {
-        ctx.fillStyle = 'limegreen'
-      } else if (attackWords.includes(word.text)) {
-        ctx.fillStyle = 'red'
-      } else {
-        ctx.fillStyle = 'white'
+      switch (word.type) {
+        case 'heal':
+          ctx.fillStyle = 'limegreen'
+          break
+        case 'attack':
+          ctx.fillStyle = 'red'
+          break
+        case 'speed':
+          ctx.fillStyle = '#3498db'
+          break
+        case 'shield':
+          ctx.fillStyle = '#f39c12'
+          break
+        case 'item':
+          ctx.fillStyle = '#9b59b6'
+          break
+        default:
+          ctx.fillStyle = 'white'
+          break
       }
 
       ctx.fillText(word.text, word.position.x, word.position.y)
@@ -97,53 +109,96 @@ const GameScreen = () => {
   }, [gameState, camera, effects])
 
   useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-
     const handleMouseDown = (e: MouseEvent) => {
-      isDragging.current = true
-      lastMousePos.current = { x: e.clientX, y: e.clientY }
+      isMouseDown.current = true
+      mousePosition.current = { x: e.clientX, y: e.clientY }
     }
-
     const handleMouseUp = () => {
-      isDragging.current = false
+      isMouseDown.current = false
+    }
+    const handleMouseMove = (e: MouseEvent) => {
+      mousePosition.current = { x: e.clientX, y: e.clientY }
     }
 
-    const handleMouseMove = (e: MouseEvent) => {
-      if (isDragging.current && currentPlayer) {
-        const newPosition = {
-          x: currentPlayer.position.x + e.clientX - lastMousePos.current.x,
-          y: currentPlayer.position.y + e.clientY - lastMousePos.current.y,
-        }
+    window.addEventListener('mousedown', handleMouseDown)
+    window.addEventListener('mouseup', handleMouseUp)
+    window.addEventListener('mousemove', handleMouseMove)
 
-        newPosition.x = Math.max(
-          0,
-          Math.min(gameState?.mapSize.width || 0, newPosition.x),
-        )
-        newPosition.y = Math.max(
-          0,
-          Math.min(gameState?.mapSize.height || 0, newPosition.y),
-        )
-        movePlayer(newPosition)
-        lastMousePos.current = { x: e.clientX, y: e.clientY }
+    let animationFrameId: number
+    const gameLoop = () => {
+      if (isMouseDown.current && currentPlayer && gameState) {
+        const playerScreenPos = {
+          x: window.innerWidth / 2,
+          y: window.innerHeight / 2,
+        }
+        const dx = mousePosition.current.x - playerScreenPos.x
+        const dy = mousePosition.current.y - playerScreenPos.y
+        const distance = Math.hypot(dx, dy)
+
+        if (distance > 1) {
+          const maxSpeed = 1
+          const speedFactor = 0.06
+          const speed = Math.min(maxSpeed, distance * speedFactor)
+
+          const angle = Math.atan2(dy, dx)
+
+          const newPlayerPos = {
+            x: currentPlayer.position.x + Math.cos(angle) * speed,
+            y: currentPlayer.position.y + Math.sin(angle) * speed,
+          }
+
+          const clampedX = Math.max(
+            0,
+            Math.min(gameState.mapSize.width, newPlayerPos.x),
+          )
+          const clampedY = Math.max(
+            0,
+            Math.min(gameState.mapSize.height, newPlayerPos.y),
+          )
+          const clampedPos = { x: clampedX, y: clampedY }
+
+          updatePlayerPosition(currentPlayer.id, clampedPos)
+
+          movePlayer(angle)
+        }
+      }
+      animationFrameId = requestAnimationFrame(gameLoop)
+    }
+
+    gameLoop()
+
+    return () => {
+      window.removeEventListener('mousedown', handleMouseDown)
+      window.removeEventListener('mouseup', handleMouseUp)
+      window.removeEventListener('mousemove', handleMouseMove)
+      cancelAnimationFrame(animationFrameId)
+    }
+  }, [currentPlayer, gameState, movePlayer, updatePlayerPosition])
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Tab') {
+        e.preventDefault()
+        inputRef.current?.focus()
       }
     }
 
-    canvas.addEventListener('mousedown', handleMouseDown)
-    canvas.addEventListener('mouseup', handleMouseUp)
-    canvas.addEventListener('mousemove', handleMouseMove)
+    window.addEventListener('keydown', handleKeyDown)
 
     return () => {
-      canvas.removeEventListener('mousedown', handleMouseDown)
-      canvas.removeEventListener('mouseup', handleMouseUp)
-      canvas.removeEventListener('mousemove', handleMouseMove)
+      window.removeEventListener('keydown', handleKeyDown)
     }
-  }, [currentPlayer, movePlayer, gameState?.mapSize])
+  }, [])
 
   const handleWordSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     submitWord(word)
     setWord('')
+  }
+
+  const handleExitGame = () => {
+    disconnect()
+    router.push('/')
   }
 
   return (
@@ -167,6 +222,7 @@ const GameScreen = () => {
       >
         <form onSubmit={handleWordSubmit}>
           <input
+            ref={inputRef}
             type="text"
             value={word}
             onChange={(e) => setWord(e.target.value)}
@@ -184,56 +240,55 @@ const GameScreen = () => {
         </form>
       </div>
 
-      {currentPlayer && (
+      <button
+        onClick={handleExitGame}
+        style={{
+          position: 'absolute',
+          top: 10,
+          left: 10,
+          zIndex: 10,
+          padding: '8px 16px',
+          backgroundColor: 'rgba(255, 0, 0, 0.7)',
+          color: 'white',
+          border: 'none',
+          borderRadius: '5px',
+          cursor: 'pointer',
+        }}
+      >
+        나가기
+      </button>
+
+      {gameState && (
         <div
           style={{
             position: 'absolute',
             top: 10,
-            left: 10,
+            right: 10,
             color: 'white',
             backgroundColor: 'rgba(0,0,0,0.5)',
             padding: '10px',
             borderRadius: '5px',
+            minWidth: '140px',
+            zIndex: 10,
           }}
         >
-          <h3>{currentPlayer.name}</h3>
-          <p>Health: {currentPlayer.health}</p>
+          <h4 style={{ margin: '0 0 5px 0' }}>플레이어 랭킹</h4>
+          {[...gameState.players]
+            .sort((a, b) => b.health - a.health)
+            .map((player, index) => (
+              <div
+                key={player.id}
+                style={{
+                  fontSize: '14px',
+                  fontWeight: player.id === socket?.id ? 'bold' : 'normal',
+                  color: player.id === socket?.id ? '#4ade80' : 'white',
+                }}
+              >
+                {index + 1}위 - {player.skin} {player.name} ({player.health})
+              </div>
+            ))}
         </div>
       )}
-
-      {gameState && (
-  <div
-    style={{
-      position: 'absolute',
-      top: 10,
-      right: 10,
-      color: 'white',
-      backgroundColor: 'rgba(0,0,0,0.5)',
-      padding: '10px',
-      borderRadius: '5px',
-      minWidth: '140px',
-    }}
-  >
-    <h4 style={{ margin: '0 0 5px 0' }}>플레이어 랭킹</h4>
-    {[...gameState.players]
-      .sort((a, b) => b.health - a.health)
-      .map((player, index) => (
-        <div
-          key={player.id}
-          style={{
-            fontSize: '14px',
-            fontWeight: player.id === socket?.id ? 'bold' : 'normal',
-            color: player.id === socket?.id ? '#4ade80' : 'white',
-          }}
-        >
-          {index + 1}위 - {player.skin} {player.name} ({player.health})
-        </div>
-      ))}
-  </div>
-)}
-
     </div>
   )
 }
-
-export default GameScreen
