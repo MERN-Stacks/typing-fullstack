@@ -293,7 +293,7 @@ let GameService = GameService_1 = class GameService {
             timeout: setTimeout(() => {
                 player.effects.shield.active = false;
             }, 15000),
-        }; // 15 seconds
+        };
         this.broadcastMessage('effect', {
             position: player.position,
             emoji: '🛡️',

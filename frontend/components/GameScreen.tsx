@@ -202,24 +202,9 @@ export default function GameScreen() {
   }
 
   return (
-    <div
-      style={{
-        position: 'relative',
-        width: '100vw',
-        height: '100vh',
-        background: '#111',
-      }}
-    >
-      <canvas ref={canvasRef} style={{ display: 'block' }} />
-      <div
-        style={{
-          position: 'absolute',
-          bottom: '20px',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          zIndex: 10,
-        }}
-      >
+    <div className="relative w-screen h-screen bg-gray-900">
+      <canvas ref={canvasRef} className="block" />
+      <div className="absolute bottom-5 left-1/2 -translate-x-1/2 z-10">
         <form onSubmit={handleWordSubmit}>
           <input
             ref={inputRef}
@@ -227,14 +212,7 @@ export default function GameScreen() {
             value={word}
             onChange={(e) => setWord(e.target.value)}
             placeholder="Type a word and press Enter"
-            style={{
-              padding: '10px',
-              width: '300px',
-              borderRadius: '8px',
-              border: '1px solid #ccc',
-              background: '#222',
-              color: 'white',
-            }}
+            className="w-[300px] rounded-lg border border-gray-300 bg-gray-800 p-2.5 text-white"
             autoFocus
           />
         </form>
@@ -242,47 +220,22 @@ export default function GameScreen() {
 
       <button
         onClick={handleExitGame}
-        style={{
-          position: 'absolute',
-          top: 10,
-          left: 10,
-          zIndex: 10,
-          padding: '8px 16px',
-          backgroundColor: 'rgba(255, 0, 0, 0.7)',
-          color: 'white',
-          border: 'none',
-          borderRadius: '5px',
-          cursor: 'pointer',
-        }}
+        className="absolute top-2.5 left-2.5 z-10 cursor-pointer rounded-md border-none bg-red-600/70 p-2 text-white"
       >
         나가기
       </button>
 
       {gameState && (
-        <div
-          style={{
-            position: 'absolute',
-            top: 10,
-            right: 10,
-            color: 'white',
-            backgroundColor: 'rgba(0,0,0,0.5)',
-            padding: '10px',
-            borderRadius: '5px',
-            minWidth: '140px',
-            zIndex: 10,
-          }}
-        >
-          <h4 style={{ margin: '0 0 5px 0' }}>플레이어 랭킹</h4>
+        <div className="absolute top-2.5 right-2.5 z-10 min-w-[140px] rounded-md bg-black/50 p-2.5 text-white">
+          <h4 className="m-0 mb-1.5">플레이어 랭킹</h4>
           {[...gameState.players]
             .sort((a, b) => b.health - a.health)
             .map((player, index) => (
               <div
                 key={player.id}
-                style={{
-                  fontSize: '14px',
-                  fontWeight: player.id === socket?.id ? 'bold' : 'normal',
-                  color: player.id === socket?.id ? '#4ade80' : 'white',
-                }}
+                className={`text-sm ${
+                  player.id === socket?.id ? 'font-bold text-green-400' : ''
+                }`}
               >
                 {index + 1}위 - {player.skin} {player.name} ({player.health})
               </div>

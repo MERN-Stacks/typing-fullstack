@@ -362,7 +362,7 @@ export class GameService implements OnModuleInit, OnModuleDestroy {
       timeout: setTimeout(() => {
         player.effects.shield!.active = false
       }, 15000) as unknown as NodeJS.Timeout,
-    } // 15 seconds
+    }
     this.broadcastMessage('effect', {
       position: player.position,
       emoji: '🛡️',
