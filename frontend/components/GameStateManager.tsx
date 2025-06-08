@@ -126,7 +126,7 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
       setEffects((prevEffects) =>
         prevEffects.length > 0 ? prevEffects.slice(1) : [],
       )
-    }, 2000) // Effects last for 2 seconds
+    }, 2000)
     return () => clearInterval(timer)
   }, [])
 
