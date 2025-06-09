@@ -37,6 +37,7 @@ interface GameContextType {
     playerId: string,
     position: { x: number; y: number },
   ) => void
+  reset: () => void
 }
 
 const GameContext = createContext<GameContextType | null>(null)
@@ -66,15 +67,21 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
     socket.disconnect()
   }, [])
 
+  const reset = useCallback(() => {
+    setGameState(null)
+    setEffects([])
+    setCurrentPlayer(null)
+    setCamera({ x: 0, y: 0 })
+    setIsConnected(false)
+  }, [])
+
   useEffect(() => {
     function onConnect() {
       setIsConnected(true)
     }
 
     function onDisconnect() {
-      setIsConnected(false)
-      setCurrentPlayer(null)
-      setGameState(null)
+      reset()
     }
 
     function onGameState(state: GameState) {
@@ -103,7 +110,7 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
       socket.off('gameState', onGameState)
       socket.off('effect', onEffect)
     }
-  }, [])
+  }, [reset])
 
   useEffect(() => {
     if (gameState && socket) {
@@ -126,7 +133,7 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
       setEffects((prevEffects) =>
         prevEffects.length > 0 ? prevEffects.slice(1) : [],
       )
-    }, 2000) // Effects last for 2 seconds
+    }, 2000)
     return () => clearInterval(timer)
   }, [])
 
@@ -167,6 +174,7 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
     submitWord,
     movePlayer,
     updatePlayerPosition,
+    reset,
   }
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>

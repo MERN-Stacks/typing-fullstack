@@ -15,11 +15,14 @@ export default function GameScreen() {
     currentPlayer,
     camera,
     updatePlayerPosition,
+    reset,
   } = useGame()
+
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const [word, setWord] = useState('')
   const router = useRouter()
+  const isSpectator = currentPlayer === null
 
   const mousePosition = useRef({ x: 0, y: 0 })
   const isMouseDown = useRef(false)
@@ -33,9 +36,7 @@ export default function GameScreen() {
 
     canvas.width = window.innerWidth
     canvas.height = window.innerHeight
-
     ctx.clearRect(0, 0, canvas.width, canvas.height)
-
     ctx.save()
     ctx.translate(-camera.x, -camera.y)
 
@@ -57,47 +58,35 @@ export default function GameScreen() {
     ctx.font = '20px Arial'
     ctx.textAlign = 'center'
     gameState.words.forEach((word) => {
-      switch (word.type) {
-        case 'heal':
-          ctx.fillStyle = 'limegreen'
-          break
-        case 'attack':
-          ctx.fillStyle = 'red'
-          break
-        case 'speed':
-          ctx.fillStyle = '#3498db'
-          break
-        case 'shield':
-          ctx.fillStyle = '#f39c12'
-          break
-        case 'item':
-          ctx.fillStyle = '#9b59b6'
-          break
-        default:
-          ctx.fillStyle = 'white'
-          break
+      const colorMap: Record<string, string> = {
+        heal: 'limegreen',
+        attack: 'red',
+        speed: '#3498db',
+        shield: '#f39c12',
+        item: '#9b59b6',
       }
-
+      ctx.fillStyle = colorMap[word.type] || 'white'
       ctx.fillText(word.text, word.position.x, word.position.y)
     })
 
-    gameState.players.forEach((player) => {
-      ctx.fillStyle = 'red'
-      ctx.fillRect(player.position.x - 25, player.position.y - 40, 50, 5)
-      ctx.fillStyle = 'green'
-      ctx.fillRect(
-        player.position.x - 25,
-        player.position.y - 40,
-        (player.health / 100) * 50,
-        5,
-      )
-
-      ctx.font = '30px Arial'
-      ctx.fillText(player.skin, player.position.x, player.position.y)
-      ctx.font = '14px Arial'
-      ctx.fillStyle = 'white'
-      ctx.fillText(player.name, player.position.x, player.position.y + 20)
-    })
+    gameState.players
+      .filter((player) => player.name !== '관전자')
+      .forEach((player) => {
+        ctx.fillStyle = 'red'
+        ctx.fillRect(player.position.x - 25, player.position.y - 40, 50, 5)
+        ctx.fillStyle = 'green'
+        ctx.fillRect(
+          player.position.x - 25,
+          player.position.y - 40,
+          (player.health / 100) * 50,
+          5,
+        )
+        ctx.font = '30px Arial'
+        ctx.fillText(player.skin, player.position.x, player.position.y)
+        ctx.font = '14px Arial'
+        ctx.fillStyle = 'white'
+        ctx.fillText(player.name, player.position.x, player.position.y + 20)
+      })
 
     effects.forEach((effect) => {
       ctx.font = '30px Arial'
@@ -126,7 +115,7 @@ export default function GameScreen() {
 
     let animationFrameId: number
     const gameLoop = () => {
-      if (isMouseDown.current && currentPlayer && gameState) {
+      if (!isSpectator && isMouseDown.current && currentPlayer && gameState) {
         const playerScreenPos = {
           x: window.innerWidth / 2,
           y: window.innerHeight / 2,
@@ -139,26 +128,14 @@ export default function GameScreen() {
           const maxSpeed = 1
           const speedFactor = 0.06
           const speed = Math.min(maxSpeed, distance * speedFactor)
-
           const angle = Math.atan2(dy, dx)
-
           const newPlayerPos = {
             x: currentPlayer.position.x + Math.cos(angle) * speed,
             y: currentPlayer.position.y + Math.sin(angle) * speed,
           }
-
-          const clampedX = Math.max(
-            0,
-            Math.min(gameState.mapSize.width, newPlayerPos.x),
-          )
-          const clampedY = Math.max(
-            0,
-            Math.min(gameState.mapSize.height, newPlayerPos.y),
-          )
-          const clampedPos = { x: clampedX, y: clampedY }
-
-          updatePlayerPosition(currentPlayer.id, clampedPos)
-
+          const clampedX = Math.max(0, Math.min(gameState.mapSize.width, newPlayerPos.x))
+          const clampedY = Math.max(0, Math.min(gameState.mapSize.height, newPlayerPos.y))
+          updatePlayerPosition(currentPlayer.id, { x: clampedX, y: clampedY })
           movePlayer(angle)
         }
       }
@@ -182,9 +159,7 @@ export default function GameScreen() {
         inputRef.current?.focus()
       }
     }
-
     window.addEventListener('keydown', handleKeyDown)
-
     return () => {
       window.removeEventListener('keydown', handleKeyDown)
     }
@@ -192,43 +167,47 @@ export default function GameScreen() {
 
   const handleWordSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    submitWord(word)
-    setWord('')
+    if (!isSpectator) {
+      submitWord(word)
+      setWord('')
+    }
   }
 
   const handleExitGame = () => {
     disconnect()
+    reset()
     router.push('/')
   }
 
   return (
     <div className="relative w-screen h-screen bg-gray-900">
       <canvas ref={canvasRef} className="block" />
-      <div className="absolute bottom-5 left-1/2 -translate-x-1/2 z-10">
-        <form onSubmit={handleWordSubmit}>
-          <input
-            ref={inputRef}
-            type="text"
-            value={word}
-            onChange={(e) => setWord(e.target.value)}
-            placeholder="Type a word and press Enter"
-            className="w-[300px] rounded-lg border border-gray-300 bg-gray-800 p-2.5 text-white"
-            autoFocus
-          />
-        </form>
-      </div>
-
+      {!isSpectator && (
+        <div className="absolute bottom-5 left-1/2 -translate-x-1/2 z-10">
+          <form onSubmit={handleWordSubmit}>
+            <input
+              ref={inputRef}
+              type="text"
+              value={word}
+              onChange={(e) => setWord(e.target.value)}
+              placeholder="Type a word and press Enter"
+              className="w-[300px] rounded-lg border border-gray-300 bg-gray-800 p-2.5 text-white"
+              autoFocus
+            />
+          </form>
+        </div>
+      )}
       <button
         onClick={handleExitGame}
         className="absolute top-2.5 left-2.5 z-10 cursor-pointer rounded-md border-none bg-red-600/70 p-2 text-white"
       >
         나가기
       </button>
-
-      {gameState && (
+      {!isSpectator && gameState && (
         <div className="absolute top-2.5 right-2.5 z-10 min-w-[140px] rounded-md bg-black/50 p-2.5 text-white">
           <h4 className="m-0 mb-1.5">플레이어 랭킹</h4>
           {[...gameState.players]
+            .filter((player) => player.name !== '관전자')
             .sort((a, b) => b.health - a.health)
             .map((player, index) => (
               <div
@@ -240,6 +219,11 @@ export default function GameScreen() {
                 {index + 1}위 - {player.skin} {player.name} ({player.health})
               </div>
             ))}
+        </div>
+      )}
+      {isSpectator && (
+        <div className="absolute top-2.5 right-2.5 z-10 text-white bg-black/50 p-2.5 rounded">
+          👀 관전 중입니다
         </div>
       )}
     </div>
