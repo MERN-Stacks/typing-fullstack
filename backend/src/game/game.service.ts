@@ -15,8 +15,8 @@ interface Player {
   position: { x: number; y: number }
   inventory: Item[]
   effects: {
-    speedBoost?: { active: boolean; timeout: NodeJS.Timeout }
-    shield?: { active: boolean; timeout: NodeJS.Timeout }
+    speedBoost?: { active: boolean; expiresAt: number; }
+    shield?: { active: boolean; expiresAt: number; }
   }
 }
 
@@ -36,7 +36,7 @@ interface Item {
 interface GameState {
   players: Map<string, Player>
   words: Word[]
-  items: any[] // This might be deprecated if items are only in inventory
+  items: any[] // 아직 구현하지 않았습니다.
   mapSize: { width: number; height: number }
 }
 
@@ -192,10 +192,23 @@ export class GameService implements OnModuleInit, OnModuleDestroy {
   movePlayer(id: string, angle: number) {
     const player = this.gameState.players.get(id)
     if (player) {
+      // 기본 속도
+      let effectiveSpeed = player.speed;
+
+      // 버프 적용
+      const now = Date.now();
+      if (
+        player.effects.speedBoost?.active &&
+        player.effects.speedBoost.expiresAt > now
+      ) {
+        effectiveSpeed *= 1.5; 
+      }
+
+
       // Calculate new position based on angle and player's speed
       const newPosition = {
-        x: player.position.x + Math.cos(angle) * player.speed,
-        y: player.position.y + Math.sin(angle) * player.speed,
+        x: player.position.x + Math.cos(angle) * effectiveSpeed,
+        y: player.position.y + Math.sin(angle) * effectiveSpeed,
       }
 
       // World boundary check
@@ -281,6 +294,39 @@ export class GameService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
+  useItem(playerId: string, index: number) {
+    const player = this.gameState.players.get(playerId);
+    if (!player) return;
+
+    const item = player.inventory[index];
+    if (!item) {
+      this.logger.warn(`Player ${playerId} tried to use invalid item index ${index}`);
+      return;
+    }
+
+    switch (item.type) {
+      case 'attack':
+        this.attackNearestPlayer(player);
+        break;
+      case 'heal':
+        this.healPlayer(player, 20);
+        break;
+      case 'speed':
+        this.applySpeedBoost(player);
+        break;
+      case 'shield':
+        this.applyShield(player);
+        break;
+      default:
+        this.logger.warn(`Unknown item type: ${item.type}`);
+        return;
+    }
+
+    // 사용 후 인벤토리에서 제거
+    player.inventory.splice(index, 1);
+    this.logger.log(`Player ${player.name} used item ${item.name}`);
+  }
+
   private attackNearestPlayer(attacker: Player) {
     let nearestPlayer: Player | null = null
     let minDistance = Infinity
@@ -337,38 +383,45 @@ export class GameService implements OnModuleInit, OnModuleDestroy {
   }
 
   private applySpeedBoost(player: Player) {
-    if (player.effects.speedBoost?.timeout) {
-      clearTimeout(player.effects.speedBoost.timeout)
-    }
+    const duration = 10000; // 10초
+    const now = Date.now();
+  
     player.effects.speedBoost = {
       active: true,
-      timeout: setTimeout(() => {
-        player.effects.speedBoost!.active = false
-      }, 10000) as unknown as NodeJS.Timeout,
-    } // 10 seconds
+      expiresAt: now + duration,
+    };
+  
+    setTimeout(() => {
+      player.effects.speedBoost!.active = false;
+    }, duration);
+  
     this.broadcastMessage('effect', {
       position: player.position,
       emoji: '⚡',
       color: 'yellow',
-    })
+    });
   }
-
+  
   private applyShield(player: Player) {
-    if (player.effects.shield?.timeout) {
-      clearTimeout(player.effects.shield.timeout)
-    }
+    const duration = 15000; 
+    const now = Date.now();
+  
     player.effects.shield = {
       active: true,
-      timeout: setTimeout(() => {
-        player.effects.shield!.active = false
-      }, 15000) as unknown as NodeJS.Timeout,
-    }
+      expiresAt: now + duration,
+    };
+  
+    setTimeout(() => {
+      player.effects.shield!.active = false;
+    }, duration);
+  
     this.broadcastMessage('effect', {
       position: player.position,
       emoji: '🛡️',
       color: 'blue',
-    })
+    });
   }
+  
 
   private giveRandomItem(player: Player) {
     const itemKeys = Object.keys(

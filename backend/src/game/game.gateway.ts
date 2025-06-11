@@ -14,7 +14,7 @@ import { GameService } from './game.service'
 
 @WebSocketGateway({
   cors: {
-    origin: '*', // In production, you should restrict this to your frontend's domain
+    origin: '*', 
   },
 })
 export class GameGateway
@@ -57,5 +57,13 @@ export class GameGateway
     @MessageBody() word: string,
   ): void {
     this.gameService.submitWord(client.id, word)
+  }
+
+  @SubscribeMessage('useItem')
+  handleUseItem(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() index: number,
+  ) {
+    this.gameService.useItem(client.id, index);
   }
 }

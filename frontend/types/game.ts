@@ -1,12 +1,26 @@
+// export interface Player {
+//   id: string
+//   name: string
+//   speed: number
+//   skin: string
+//   health: number
+//   position: { x: number; y: number }
+//   inventory: Item[]
+//   shield: number
+// }
+
 export interface Player {
   id: string
   name: string
-  speed: number
   skin: string
   health: number
+  speed: number
   position: { x: number; y: number }
   inventory: Item[]
-  shield: number
+  effects: {
+    speedBoost?: { active: boolean; expiresAt: number; }
+    shield?: { active: boolean; expiresAt: number; }
+  }
 }
 
 export interface NearestPlayer {
