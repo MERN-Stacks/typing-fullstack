@@ -14,7 +14,7 @@ import { GameService } from './game.service'
 
 @WebSocketGateway({
   cors: {
-    origin: '*', // In production, you should restrict this to your frontend's domain
+    origin: '*',
   },
 })
 export class GameGateway
@@ -25,22 +25,35 @@ export class GameGateway
 
   constructor(private readonly gameService: GameService) {}
 
-  // Pass the server instance to the game service once the gateway is initialized
   afterInit(server: Server) {
     this.logger.log('WebSocket Gateway Initialized')
     this.gameService.setServer(server)
   }
 
-  handleConnection(client: Socket, ...args: any[]) {
-    this.logger.log(`Client connected: ${client.id}`)
-    const name = (client.handshake.query.name as string) || 'Anonymous'
-    const skin = (client.handshake.query.skin as string) || '😊'
-    this.gameService.addPlayer(client.id, name, skin)
+  handleConnection(client: Socket) {
+    const nameRaw = client.handshake.query.name
+    const skinRaw = client.handshake.query.skin
+    const spectator = client.handshake.query.spectator === '1'
+
+    const name = Array.isArray(nameRaw) ? nameRaw[0] : nameRaw || 'Anonymous'
+    const skin = Array.isArray(skinRaw) ? skinRaw[0] : skinRaw || '😊'
+
+    if (!spectator) {
+      this.gameService.addPlayer(client.id, name, skin)
+      this.logger.log(`Client connected: ${client.id} (${name})`)
+    } else {
+      this.logger.log(`Spectator connected: ${client.id} (${name})`)
+    }
   }
 
   handleDisconnect(client: Socket) {
-    this.logger.log(`Client disconnected: ${client.id}`)
-    this.gameService.removePlayer(client.id)
+    const spectator = client.handshake.query.spectator === '1'
+    if (!spectator) {
+      this.gameService.removePlayer(client.id)
+      this.logger.log(`Client disconnected: ${client.id}`)
+    } else {
+      this.logger.log(`Spectator disconnected: ${client.id}`)
+    }
   }
 
   @SubscribeMessage('playerMove')
@@ -48,7 +61,10 @@ export class GameGateway
     @ConnectedSocket() client: Socket,
     @MessageBody() angle: number,
   ): void {
-    this.gameService.movePlayer(client.id, angle)
+    const spectator = client.handshake.query.spectator === '1'
+    if (!spectator) {
+      this.gameService.movePlayer(client.id, angle)
+    }
   }
 
   @SubscribeMessage('submitWord')
@@ -56,6 +72,9 @@ export class GameGateway
     @ConnectedSocket() client: Socket,
     @MessageBody() word: string,
   ): void {
-    this.gameService.submitWord(client.id, word)
+    const spectator = client.handshake.query.spectator === '1'
+    if (!spectator) {
+      this.gameService.submitWord(client.id, word)
+    }
   }
 }

@@ -7,9 +7,9 @@ import React, {
   useState,
   useCallback,
 } from 'react'
-import { type Socket } from 'socket.io-client'
-import type { GameState as ServerGameState, Player } from '@/types/game'
 import { socket } from '@/lib/socket'
+import type { Socket } from 'socket.io-client'
+import type { GameState as ServerGameState, Player } from '@/types/game'
 
 interface GameState extends Omit<ServerGameState, 'players'> {
   players: Player[]
@@ -27,26 +27,22 @@ interface GameContextType {
   socket: Socket
   effects: Effect[]
   isConnected: boolean
+  isSpectator: boolean
   currentPlayer: Player | null
   camera: { x: number; y: number }
-  connect: (name: string, skin: string) => void
+  setCamera: React.Dispatch<React.SetStateAction<{ x: number; y: number }>>
+  connect: (name: string, skin: string, isSpectator?: boolean) => void
   disconnect: () => void
   submitWord: (word: string) => void
   movePlayer: (angle: number) => void
-  updatePlayerPosition: (
-    playerId: string,
-    position: { x: number; y: number },
-  ) => void
-  reset: () => void
+  updatePlayerPosition: (playerId: string, position: { x: number; y: number }) => void
 }
 
 const GameContext = createContext<GameContextType | null>(null)
 
 export const useGame = () => {
   const context = useContext(GameContext)
-  if (!context) {
-    throw new Error('useGame must be used within a GameProvider')
-  }
+  if (!context) throw new Error('useGame must be used within a GameProvider')
   return context
 }
 
@@ -56,23 +52,17 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
   const [isConnected, setIsConnected] = useState(socket.connected)
   const [currentPlayer, setCurrentPlayer] = useState<Player | null>(null)
   const [camera, setCamera] = useState({ x: 0, y: 0 })
+  const [isSpectator, setIsSpectator] = useState(false)
 
-  const connect = useCallback((name: string, skin: string) => {
+  const connect = useCallback((name: string, skin: string, spectator = false) => {
     if (socket.connected) return
-    socket.io.opts.query = { name, skin }
+    setIsSpectator(spectator)
+    socket.io.opts.query = { name, skin, spectator: spectator ? '1' : '0' }
     socket.connect()
   }, [])
 
   const disconnect = useCallback(() => {
     socket.disconnect()
-  }, [])
-
-  const reset = useCallback(() => {
-    setGameState(null)
-    setEffects([])
-    setCurrentPlayer(null)
-    setCamera({ x: 0, y: 0 })
-    setIsConnected(false)
   }, [])
 
   useEffect(() => {
@@ -81,7 +71,9 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
     }
 
     function onDisconnect() {
-      reset()
+      setIsConnected(false)
+      setCurrentPlayer(null)
+      setGameState(null)
     }
 
     function onGameState(state: GameState) {
@@ -89,10 +81,7 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
     }
 
     function onEffect(effect: Omit<Effect, 'id'>) {
-      setEffects((prevEffects) => [
-        ...prevEffects,
-        { ...effect, id: Date.now() + Math.random() },
-      ])
+      setEffects((prev) => [...prev, { ...effect, id: Date.now() + Math.random() }])
     }
 
     socket.on('connect', onConnect)
@@ -100,9 +89,7 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
     socket.on('gameState', onGameState)
     socket.on('effect', onEffect)
 
-    if (socket.connected) {
-      onConnect()
-    }
+    if (socket.connected) onConnect()
 
     return () => {
       socket.off('connect', onConnect)
@@ -110,7 +97,7 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
       socket.off('gameState', onGameState)
       socket.off('effect', onEffect)
     }
-  }, [reset])
+  }, [])
 
   useEffect(() => {
     if (gameState && socket) {
@@ -130,51 +117,47 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setEffects((prevEffects) =>
-        prevEffects.length > 0 ? prevEffects.slice(1) : [],
-      )
+      setEffects((prev) => (prev.length > 0 ? prev.slice(1) : []))
     }, 2000)
     return () => clearInterval(timer)
   }, [])
 
   const submitWord = useCallback((word: string) => {
-    if (socket.connected && word) {
+    if (socket.connected && word && currentPlayer) {
       socket.emit('submitWord', word)
     }
-  }, [])
+  }, [currentPlayer])
 
   const movePlayer = useCallback((angle: number) => {
-    if (socket.connected) {
+    if (socket.connected && currentPlayer) {
       socket.emit('playerMove', angle)
     }
-  }, [])
+  }, [currentPlayer])
 
-  const updatePlayerPosition = useCallback(
-    (playerId: string, position: { x: number; y: number }) => {
-      setGameState((prev) => {
-        if (!prev) return null
-        const newPlayers = prev.players.map((p) =>
-          p.id === playerId ? { ...p, position } : p,
-        )
-        return { ...prev, players: newPlayers }
-      })
-    },
-    [],
-  )
+  const updatePlayerPosition = useCallback((playerId: string, position: { x: number; y: number }) => {
+    setGameState((prev) => {
+      if (!prev) return null
+      const updatedPlayers = prev.players.map((p) =>
+        p.id === playerId ? { ...p, position } : p
+      )
+      return { ...prev, players: updatedPlayers }
+    })
+  }, [])
 
   const value = {
     socket,
     gameState,
     effects,
     isConnected,
+    isSpectator,
     currentPlayer,
     camera,
+    setCamera,
     connect,
     disconnect,
     submitWord,
     movePlayer,
     updatePlayerPosition,
-    reset,
   }
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>

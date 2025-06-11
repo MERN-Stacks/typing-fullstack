@@ -22,26 +22,45 @@ let GameGateway = class GameGateway {
         this.gameService = gameService;
         this.logger = new common_1.Logger('GameGateway');
     }
-    // Pass the server instance to the game service once the gateway is initialized
     afterInit(server) {
         this.logger.log('WebSocket Gateway Initialized');
         this.gameService.setServer(server);
     }
-    handleConnection(client, ...args) {
-        this.logger.log(`Client connected: ${client.id}`);
-        const name = client.handshake.query.name || 'Anonymous';
-        const skin = client.handshake.query.skin || '😊';
-        this.gameService.addPlayer(client.id, name, skin);
+    handleConnection(client) {
+        const nameRaw = client.handshake.query.name;
+        const skinRaw = client.handshake.query.skin;
+        const spectator = client.handshake.query.spectator === '1';
+        const name = Array.isArray(nameRaw) ? nameRaw[0] : nameRaw || 'Anonymous';
+        const skin = Array.isArray(skinRaw) ? skinRaw[0] : skinRaw || '😊';
+        if (!spectator) {
+            this.gameService.addPlayer(client.id, name, skin);
+            this.logger.log(`Client connected: ${client.id} (${name})`);
+        }
+        else {
+            this.logger.log(`Spectator connected: ${client.id} (${name})`);
+        }
     }
     handleDisconnect(client) {
-        this.logger.log(`Client disconnected: ${client.id}`);
-        this.gameService.removePlayer(client.id);
+        const spectator = client.handshake.query.spectator === '1';
+        if (!spectator) {
+            this.gameService.removePlayer(client.id);
+            this.logger.log(`Client disconnected: ${client.id}`);
+        }
+        else {
+            this.logger.log(`Spectator disconnected: ${client.id}`);
+        }
     }
     handlePlayerMove(client, angle) {
-        this.gameService.movePlayer(client.id, angle);
+        const spectator = client.handshake.query.spectator === '1';
+        if (!spectator) {
+            this.gameService.movePlayer(client.id, angle);
+        }
     }
     handleWordSubmit(client, word) {
-        this.gameService.submitWord(client.id, word);
+        const spectator = client.handshake.query.spectator === '1';
+        if (!spectator) {
+            this.gameService.submitWord(client.id, word);
+        }
     }
 };
 exports.GameGateway = GameGateway;
@@ -68,7 +87,7 @@ __decorate([
 exports.GameGateway = GameGateway = __decorate([
     (0, websockets_1.WebSocketGateway)({
         cors: {
-            origin: '*', // In production, you should restrict this to your frontend's domain
+            origin: '*',
         },
     }),
     __metadata("design:paramtypes", [game_service_1.GameService])

@@ -7,7 +7,7 @@ export declare class GameGateway implements OnGatewayInit, OnGatewayConnection, 
     private logger;
     constructor(gameService: GameService);
     afterInit(server: Server): void;
-    handleConnection(client: Socket, ...args: any[]): void;
+    handleConnection(client: Socket): void;
     handleDisconnect(client: Socket): void;
     handlePlayerMove(client: Socket, angle: number): void;
     handleWordSubmit(client: Socket, word: string): void;

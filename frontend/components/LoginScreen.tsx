@@ -35,9 +35,7 @@ export default function LoginScreen({
                 key={emoji}
                 onClick={() => setSelectedSkin(emoji)}
                 className={`text-xl hover:scale-110 transition-transform ${
-                  selectedSkin === emoji
-                    ? 'ring-2 ring-yellow-400 rounded-full'
-                    : ''
+                  selectedSkin === emoji ? 'ring-2 ring-yellow-400 rounded-full' : ''
                 }`}
               >
                 {emoji}
@@ -46,7 +44,6 @@ export default function LoginScreen({
           </div>
         </div>
 
-        {/* 게임 시작 버튼 */}
         <button
           onClick={() => onStart(nickname, selectedSkin, false)}
           className="w-full bg-yellow-400 hover:bg-yellow-500 text-white font-semibold py-2 rounded-full transition-colors"
@@ -54,7 +51,6 @@ export default function LoginScreen({
           게임 시작
         </button>
 
-        
         <button
           onClick={() => onStart('관전자', '👀', true)}
           className="w-full bg-yellow-400 hover:bg-yellow-500 text-white font-semibold py-2 rounded-full transition-colors"
