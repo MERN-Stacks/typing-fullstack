@@ -37,6 +37,7 @@ interface GameContextType {
     playerId: string,
     position: { x: number; y: number },
   ) => void
+  useItem: (index: number) => void;
 }
 
 const GameContext = createContext<GameContextType | null>(null)
@@ -154,6 +155,11 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
     },
     [],
   )
+  const useItem = useCallback((index: number) => {
+  if (socket.connected) {
+    socket.emit('useItem', index);
+  }
+}, []);
 
   const value = {
     socket,
@@ -167,6 +173,7 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
     submitWord,
     movePlayer,
     updatePlayerPosition,
+    useItem,
   }
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>

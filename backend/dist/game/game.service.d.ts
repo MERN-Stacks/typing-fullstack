@@ -14,11 +14,11 @@ interface Player {
     effects: {
         speedBoost?: {
             active: boolean;
-            timeout: NodeJS.Timeout;
+            expiresAt: number;
         };
         shield?: {
             active: boolean;
-            timeout: NodeJS.Timeout;
+            expiresAt: number;
         };
     };
 }
@@ -50,6 +50,7 @@ export declare class GameService implements OnModuleInit, OnModuleDestroy {
     private generateNewWord;
     submitWord(playerId: string, submittedWord: string): void;
     private processWordEffect;
+    useItem(playerId: string, index: number): void;
     private attackNearestPlayer;
     private healPlayer;
     private applySpeedBoost;

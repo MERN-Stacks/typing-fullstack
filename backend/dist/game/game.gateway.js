@@ -43,6 +43,9 @@ let GameGateway = class GameGateway {
     handleWordSubmit(client, word) {
         this.gameService.submitWord(client.id, word);
     }
+    handleUseItem(client, index) {
+        this.gameService.useItem(client.id, index);
+    }
 };
 exports.GameGateway = GameGateway;
 __decorate([
@@ -65,10 +68,18 @@ __decorate([
     __metadata("design:paramtypes", [socket_io_1.Socket, String]),
     __metadata("design:returntype", void 0)
 ], GameGateway.prototype, "handleWordSubmit", null);
+__decorate([
+    (0, websockets_1.SubscribeMessage)('useItem'),
+    __param(0, (0, websockets_1.ConnectedSocket)()),
+    __param(1, (0, websockets_1.MessageBody)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [socket_io_1.Socket, Number]),
+    __metadata("design:returntype", void 0)
+], GameGateway.prototype, "handleUseItem", null);
 exports.GameGateway = GameGateway = __decorate([
     (0, websockets_1.WebSocketGateway)({
         cors: {
-            origin: '*', // In production, you should restrict this to your frontend's domain
+            origin: '*',
         },
     }),
     __metadata("design:paramtypes", [game_service_1.GameService])

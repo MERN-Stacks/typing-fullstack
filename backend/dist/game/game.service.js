@@ -147,12 +147,21 @@ let GameService = GameService_1 = class GameService {
         }
     }
     movePlayer(id, angle) {
+        var _a;
         const player = this.gameState.players.get(id);
         if (player) {
+            // 기본 속도
+            let effectiveSpeed = player.speed;
+            // 버프 적용
+            const now = Date.now();
+            if (((_a = player.effects.speedBoost) === null || _a === void 0 ? void 0 : _a.active) &&
+                player.effects.speedBoost.expiresAt > now) {
+                effectiveSpeed *= 1.5;
+            }
             // Calculate new position based on angle and player's speed
             const newPosition = {
-                x: player.position.x + Math.cos(angle) * player.speed,
-                y: player.position.y + Math.sin(angle) * player.speed,
+                x: player.position.x + Math.cos(angle) * effectiveSpeed,
+                y: player.position.y + Math.sin(angle) * effectiveSpeed,
             };
             // World boundary check
             newPosition.x = Math.max(0, Math.min(this.gameState.mapSize.width, newPosition.x));
@@ -220,6 +229,36 @@ let GameService = GameService_1 = class GameService {
                 break;
         }
     }
+    useItem(playerId, index) {
+        const player = this.gameState.players.get(playerId);
+        if (!player)
+            return;
+        const item = player.inventory[index];
+        if (!item) {
+            this.logger.warn(`Player ${playerId} tried to use invalid item index ${index}`);
+            return;
+        }
+        switch (item.type) {
+            case 'attack':
+                this.attackNearestPlayer(player);
+                break;
+            case 'heal':
+                this.healPlayer(player, 20);
+                break;
+            case 'speed':
+                this.applySpeedBoost(player);
+                break;
+            case 'shield':
+                this.applyShield(player);
+                break;
+            default:
+                this.logger.warn(`Unknown item type: ${item.type}`);
+                return;
+        }
+        // 사용 후 인벤토리에서 제거
+        player.inventory.splice(index, 1);
+        this.logger.log(`Player ${player.name} used item ${item.name}`);
+    }
     attackNearestPlayer(attacker) {
         var _a;
         let nearestPlayer = null;
@@ -267,16 +306,15 @@ let GameService = GameService_1 = class GameService {
         });
     }
     applySpeedBoost(player) {
-        var _a;
-        if ((_a = player.effects.speedBoost) === null || _a === void 0 ? void 0 : _a.timeout) {
-            clearTimeout(player.effects.speedBoost.timeout);
-        }
+        const duration = 10000; // 10초
+        const now = Date.now();
         player.effects.speedBoost = {
             active: true,
-            timeout: setTimeout(() => {
-                player.effects.speedBoost.active = false;
-            }, 10000),
-        }; // 10 seconds
+            expiresAt: now + duration,
+        };
+        setTimeout(() => {
+            player.effects.speedBoost.active = false;
+        }, duration);
         this.broadcastMessage('effect', {
             position: player.position,
             emoji: '⚡',
@@ -284,16 +322,15 @@ let GameService = GameService_1 = class GameService {
         });
     }
     applyShield(player) {
-        var _a;
-        if ((_a = player.effects.shield) === null || _a === void 0 ? void 0 : _a.timeout) {
-            clearTimeout(player.effects.shield.timeout);
-        }
+        const duration = 15000;
+        const now = Date.now();
         player.effects.shield = {
             active: true,
-            timeout: setTimeout(() => {
-                player.effects.shield.active = false;
-            }, 15000),
+            expiresAt: now + duration,
         };
+        setTimeout(() => {
+            player.effects.shield.active = false;
+        }, duration);
         this.broadcastMessage('effect', {
             position: player.position,
             emoji: '🛡️',

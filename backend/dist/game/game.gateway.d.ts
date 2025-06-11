@@ -11,4 +11,5 @@ export declare class GameGateway implements OnGatewayInit, OnGatewayConnection, 
     handleDisconnect(client: Socket): void;
     handlePlayerMove(client: Socket, angle: number): void;
     handleWordSubmit(client: Socket, word: string): void;
+    handleUseItem(client: Socket, index: number): void;
 }
