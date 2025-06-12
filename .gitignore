@@ -9,4 +9,4 @@ frontend/*.tsbuildinfo
 backend/node_modules
 backend/.env
 backend/.vscode
-backend/dist
+backend/dist/

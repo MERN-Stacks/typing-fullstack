@@ -5,7 +5,7 @@ import React, { useState } from 'react'
 export default function LoginScreen({
   onStart,
 }: {
-  onStart: (nickname: string, skin: string) => void
+  onStart: (nickname: string, skin: string, isSpectator: boolean) => void
 }) {
   const [nickname, setNickname] = useState('')
   const [selectedSkin, setSelectedSkin] = useState('🐶')
@@ -35,9 +35,7 @@ export default function LoginScreen({
                 key={emoji}
                 onClick={() => setSelectedSkin(emoji)}
                 className={`text-xl hover:scale-110 transition-transform ${
-                  selectedSkin === emoji
-                    ? 'ring-2 ring-yellow-400 rounded-full'
-                    : ''
+                  selectedSkin === emoji ? 'ring-2 ring-yellow-400 rounded-full' : ''
                 }`}
               >
                 {emoji}
@@ -47,10 +45,17 @@ export default function LoginScreen({
         </div>
 
         <button
-          onClick={() => onStart(nickname, selectedSkin)}
+          onClick={() => onStart(nickname, selectedSkin, false)}
           className="w-full bg-yellow-400 hover:bg-yellow-500 text-white font-semibold py-2 rounded-full transition-colors"
         >
           게임 시작
+        </button>
+
+        <button
+          onClick={() => onStart('관전자', '👀', true)}
+          className="w-full bg-yellow-400 hover:bg-yellow-500 text-white font-semibold py-2 rounded-full transition-colors"
+        >
+          👀 관전하기
         </button>
       </div>
     </div>
