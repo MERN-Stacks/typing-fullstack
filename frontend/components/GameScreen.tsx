@@ -99,16 +99,16 @@ export default function GameScreen() {
       ctx.fillStyle = 'white'
       ctx.fillText(player.name, player.position.x, player.position.y + 20)
 
-      const now = Date.now();
+      const now = Date.now()
 
       // ⚡ 스피드 버프 표시
       if (
         player.effects?.speedBoost?.expiresAt &&
         player.effects.speedBoost.expiresAt > now
       ) {
-        ctx.font = '24px Arial';
-        ctx.fillStyle = 'yellow';
-        ctx.fillText('⚡', player.position.x - 20, player.position.y - 50);
+        ctx.font = '24px Arial'
+        ctx.fillStyle = 'yellow'
+        ctx.fillText('⚡', player.position.x - 20, player.position.y - 50)
       }
 
       // 🛡️ 실드 버프 표시
@@ -116,11 +116,11 @@ export default function GameScreen() {
         player.effects?.shield?.expiresAt &&
         player.effects.shield.expiresAt > now
       ) {
-        console.log('Shield effect active for player:', player.id);
-        console.log(player.effects.shield.expiresAt )
-        ctx.font = '24px Arial';
-        ctx.fillStyle = 'blue';
-        ctx.fillText('🛡️', player.position.x + 20, player.position.y - 50);
+        console.log('Shield effect active for player:', player.id)
+        console.log(player.effects.shield.expiresAt)
+        ctx.font = '24px Arial'
+        ctx.fillStyle = 'blue'
+        ctx.fillText('🛡️', player.position.x + 20, player.position.y - 50)
       }
     })
 
@@ -134,15 +134,15 @@ export default function GameScreen() {
   }, [gameState, camera, effects])
 
   useEffect(() => {
-  const handleKeyDown = (e: KeyboardEvent) => {
-    if (e.key >= '1' && e.key <= '5') {
-      const index = parseInt(e.key, 10) - 1;
-      handleUseItem(index); 
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key >= '1' && e.key <= '5') {
+        const index = parseInt(e.key, 10) - 1
+        handleUseItem(index)
+      }
     }
-  };
-  window.addEventListener('keydown', handleKeyDown);
-  return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleUseItem]);
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [handleUseItem])
 
   useEffect(() => {
     const handleMouseDown = (e: MouseEvent) => {
@@ -261,7 +261,7 @@ export default function GameScreen() {
         나가기
       </button>
 
-        {currentPlayer && (
+      {currentPlayer && (
         <div className="absolute bottom-5 left-5 z-10 flex gap-2 bg-black/60 p-2 rounded-md">
           {currentPlayer.inventory.map((item, index) => (
             <div

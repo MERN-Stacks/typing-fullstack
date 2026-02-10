@@ -35,15 +35,11 @@ interface GameContextType {
   disconnect: () => void
   submitWord: (word: string) => void
   movePlayer: (angle: number) => void
-<<<<<<< HEAD
   updatePlayerPosition: (
     playerId: string,
     position: { x: number; y: number },
   ) => void
-  useItem: (index: number) => void;
-=======
-  updatePlayerPosition: (playerId: string, position: { x: number; y: number }) => void
->>>>>>> f07e8d809930bdafd5228089019f43c361f6f904
+  useItem: (index: number) => void
 }
 
 const GameContext = createContext<GameContextType | null>(null)
@@ -62,12 +58,15 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
   const [camera, setCamera] = useState({ x: 0, y: 0 })
   const [isSpectator, setIsSpectator] = useState(false)
 
-  const connect = useCallback((name: string, skin: string, spectator = false) => {
-    if (socket.connected) return
-    setIsSpectator(spectator)
-    socket.io.opts.query = { name, skin, spectator: spectator ? '1' : '0' }
-    socket.connect()
-  }, [])
+  const connect = useCallback(
+    (name: string, skin: string, spectator = false) => {
+      if (socket.connected) return
+      setIsSpectator(spectator)
+      socket.io.opts.query = { name, skin, spectator: spectator ? '1' : '0' }
+      socket.connect()
+    },
+    [],
+  )
 
   const disconnect = useCallback(() => {
     socket.disconnect()
@@ -89,7 +88,10 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
     }
 
     function onEffect(effect: Omit<Effect, 'id'>) {
-      setEffects((prev) => [...prev, { ...effect, id: Date.now() + Math.random() }])
+      setEffects((prev) => [
+        ...prev,
+        { ...effect, id: Date.now() + Math.random() },
+      ])
     }
 
     socket.on('connect', onConnect)
@@ -125,58 +127,49 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     const timer = setInterval(() => {
-<<<<<<< HEAD
       setEffects((prevEffects) =>
         prevEffects.length > 0 ? prevEffects.slice(1) : [],
       )
-=======
-      setEffects((prev) => (prev.length > 0 ? prev.slice(1) : []))
->>>>>>> f07e8d809930bdafd5228089019f43c361f6f904
     }, 2000)
     return () => clearInterval(timer)
   }, [])
 
-  const submitWord = useCallback((word: string) => {
-    if (socket.connected && word && currentPlayer) {
-      socket.emit('submitWord', word)
-    }
-  }, [currentPlayer])
+  const submitWord = useCallback(
+    (word: string) => {
+      if (socket.connected && word && currentPlayer) {
+        socket.emit('submitWord', word)
+      }
+    },
+    [currentPlayer],
+  )
 
-  const movePlayer = useCallback((angle: number) => {
-    if (socket.connected && currentPlayer) {
-      socket.emit('playerMove', angle)
-    }
-  }, [currentPlayer])
+  const movePlayer = useCallback(
+    (angle: number) => {
+      if (socket.connected && currentPlayer) {
+        socket.emit('playerMove', angle)
+      }
+    },
+    [currentPlayer],
+  )
 
-<<<<<<< HEAD
   const updatePlayerPosition = useCallback(
     (playerId: string, position: { x: number; y: number }) => {
       setGameState((prev) => {
         if (!prev) return null
-        const newPlayers = prev.players.map((p) =>
+        const updatedPlayers = prev.players.map((p) =>
           p.id === playerId ? { ...p, position } : p,
         )
-        return { ...prev, players: newPlayers }
+        return { ...prev, players: updatedPlayers }
       })
     },
     [],
   )
+
   const useItem = useCallback((index: number) => {
-  if (socket.connected) {
-    socket.emit('useItem', index);
-  }
-}, []);
-=======
-  const updatePlayerPosition = useCallback((playerId: string, position: { x: number; y: number }) => {
-    setGameState((prev) => {
-      if (!prev) return null
-      const updatedPlayers = prev.players.map((p) =>
-        p.id === playerId ? { ...p, position } : p
-      )
-      return { ...prev, players: updatedPlayers }
-    })
+    if (socket.connected) {
+      socket.emit('useItem', index)
+    }
   }, [])
->>>>>>> f07e8d809930bdafd5228089019f43c361f6f904
 
   const value = {
     socket,
